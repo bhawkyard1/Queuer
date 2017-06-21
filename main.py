@@ -57,8 +57,9 @@ class mainWindow(QtGui.QWidget):
 		self.taskGen.show()
 		
 	def addTask( self ):
-		t = self.taskGen.getTask()
-		self.taskQueueWrapper.addWidget( t )
+		for t in self.taskGen.getTasks():
+			self.taskQueueWrapper.addWidget( t )
+		self.taskGen.hide()
 		
 
 def main():

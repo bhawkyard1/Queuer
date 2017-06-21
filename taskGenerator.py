@@ -6,6 +6,8 @@ class taskGenerator( QtGui.QWidget ):
 	
 	def __init__( self,  ):
 		super( taskGenerator, self ).__init__()
+		#The number of tasks this will dispatch, ie the user can specify multiple files to be rendered.
+		self.numTasks = 0
 		self.initUI()
 		
 	def initUI( self ):
@@ -35,9 +37,21 @@ class taskGenerator( QtGui.QWidget ):
 		
 		self.updateContextualUI()
 		
-	def getTask( self ):
-		t = task( str( self.mainSelect.currentText() ) )
-		return t
+	def getTasks( self ):
+		#Get whether we are rendering, etc
+		taskName = str( self.mainSelect.currentText() )
+		#Create an empty list of tasks
+		tasks = []
+		
+		if taskName == "Render":
+			paths = str( self.contextItems[0].text() ).split(',')
+			tasks = [task( taskName + '\n' + i ) for i in paths]
+			self.numTasks = len( paths )
+		else:
+			tasks.append( task( taskName ) )
+			self.numTasks = 1
+		 
+		return tasks
 		
 	def updateContextualUI( self ):
 		t = str( self.mainSelect.currentText() )
@@ -48,16 +62,22 @@ class taskGenerator( QtGui.QWidget ):
 			widget = None
 			
 		self.contextItems = []
+		
 		if t == "Render":
 			self.contextItems.append( QtGui.QLineEdit() )
 			self.contextItems.append( QtGui.QPushButton( "Select Scene File" ) )
 			self.contextItems[1].clicked.connect( self.getRenderFile )
 			self.grid.addWidget( self.contextItems[0], 0, 2 )
 			self.grid.addWidget( self.contextItems[1], 0, 3 )
+		elif t == "Custom":
+			self.contextItems.append( QtGui.QLineEdit() )
+			self.contextItems[0].setText( "Add custom terminal commands here..." )
+			self.grid.addWidget( self.contextItems[0], 0, 2 )
 			
 	def getRenderFile( self ):
-		strings = QtGui.QFileDialog.getOpenFileName()
+		strings = QtGui.QFileDialog.getOpenFileNames()
+		print "Files " + str(strings)
 		st = ''
-		for s in strings:
+		for s in strings[0]:
 			st += s + ","
 		self.contextItems[0].setText( st )
