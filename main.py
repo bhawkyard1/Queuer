@@ -40,8 +40,13 @@ class mainWindow(QtGui.QWidget):
 		self.menu.addWidget( self.addTaskBtn )
 		self.addTaskBtn.clicked.connect( self.taskDialog )
 		
+		self.clearBtn = QtGui.QPushButton("Clear")
+		self.menu.addWidget( self.clearBtn )
+		self.clearBtn.clicked.connect( self.clearTasks )
+		
 		self.execBtn = QtGui.QPushButton("Execute")
 		self.menu.addWidget( self.execBtn )
+		self.execBtn.clicked.connect( self.execute )
 		
 		self.quitBtn = QtGui.QPushButton("Quit")
 		self.menu.addWidget( self.quitBtn )
@@ -55,11 +60,27 @@ class mainWindow(QtGui.QWidget):
 		
 	def taskDialog( self ):
 		self.taskGen.show()
-		
+	
+	#Adds one or more tasks to the queue, depending on the exact contents of self.taskGen
 	def addTask( self ):
 		for t in self.taskGen.getTasks():
 			self.taskQueueWrapper.addWidget( t )
+			self.taskList.append( t ) 
 		self.taskGen.hide()
+		
+	#Empties the task queue
+	def clearTasks( self ):
+		for t in self.taskList:
+			self.taskQueueWrapper.removeWidget( t )
+			t.deleteLater()
+			t = None
+		self.taskList = []
+	
+	#Runs the tasks
+	def execute( self ):
+		for task in self.taskList:
+			task.execute()
+		
 		
 
 def main():

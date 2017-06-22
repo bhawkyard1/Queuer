@@ -25,6 +25,7 @@ class taskGenerator( QtGui.QWidget ):
 		
 		self.mainSelect = QtGui.QComboBox( self )
 		self.mainSelect.addItem("Render")
+		self.mainSelect.addItem("Wait")
 		self.mainSelect.addItem("Custom")
 		self.mainSelect.currentIndexChanged.connect( self.updateContextualUI )
 		
@@ -47,6 +48,8 @@ class taskGenerator( QtGui.QWidget ):
 			paths = str( self.contextItems[0].text() ).split(',')
 			tasks = [task( taskName + '\n' + i ) for i in paths]
 			self.numTasks = len( paths )
+		elif taskName == "Wait":
+			tasks.append( task( taskName + '\n' + str( self.contextItems[0].value() ) + " minutes" ) )
 		else:
 			tasks.append( task( taskName ) )
 			self.numTasks = 1
@@ -69,6 +72,11 @@ class taskGenerator( QtGui.QWidget ):
 			self.contextItems[1].clicked.connect( self.getRenderFile )
 			self.grid.addWidget( self.contextItems[0], 0, 2 )
 			self.grid.addWidget( self.contextItems[1], 0, 3 )
+		elif t == "Wait":
+			self.contextItems.append( QtGui.QDoubleSpinBox() )
+			self.contextItems[0].setSuffix( " Minutes" )
+			self.contextItems[0].setRange( 0, 1440 )
+			self.grid.addWidget( self.contextItems[0], 0, 2 )
 		elif t == "Custom":
 			self.contextItems.append( QtGui.QLineEdit() )
 			self.contextItems[0].setText( "Add custom terminal commands here..." )

@@ -21,3 +21,9 @@ class task( QtGui.QFrame ):
 		
 		self.typeLabel = QtGui.QLabel( self.type, self )
 		self.typeLabel.move( 4, 4 )
+		
+	def execute( self ):
+		if self.status == taskStatus.TASK_COMPLETED:
+			return
+		self.setStyleSheet( "background-color: orange" )
+		self.setStyleSheet( "background-color: green" )
