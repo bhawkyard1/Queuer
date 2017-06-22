@@ -1,17 +1,20 @@
 from PySide import QtGui
+import time
 
 from enum import Enum
-class taskStatus(Enum):
+class taskStatus( Enum ):
 	TASK_NOT_STARTED = 0
 	TASK_STARTED = 1
 	TASK_COMPLETED = 2
+	
+from command import *
 
 class task( QtGui.QFrame ):
 	
-	def __init__( self, _type ):
+	def __init__( self, _name, _command ):
 		super( task, self ).__init__()
-		self.type = _type
-		self.command = ""
+		self.name = _name
+		self.command = _command
 		self.status = taskStatus.TASK_NOT_STARTED
 		self.initUI()
 		
@@ -19,11 +22,12 @@ class task( QtGui.QFrame ):
 		self.resize( 128, 64 )
 		self.setStyleSheet( "background-color: salmon" )
 		
-		self.typeLabel = QtGui.QLabel( self.type, self )
+		self.typeLabel = QtGui.QLabel( self.name, self )
 		self.typeLabel.move( 4, 4 )
 		
 	def execute( self ):
 		if self.status == taskStatus.TASK_COMPLETED:
 			return
-		self.setStyleSheet( "background-color: orange" )
-		self.setStyleSheet( "background-color: green" )
+		self.status = taskStatus.TASK_STARTED
+		self.command.execute()
+		self.status = taskStatus.TASK_COMPLETED

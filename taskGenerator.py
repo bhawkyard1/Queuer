@@ -1,6 +1,7 @@
 from PySide import QtGui
 from task import *
 from functools import partial
+import os 
 
 class taskGenerator( QtGui.QWidget ):
 	
@@ -46,10 +47,13 @@ class taskGenerator( QtGui.QWidget ):
 		
 		if taskName == "Render":
 			paths = str( self.contextItems[0].text() ).split(',')
-			tasks = [task( taskName + '\n' + i ) for i in paths]
+			tasks = [task( taskName + '\n' + i, command( execType.EXEC_BASH, "Render " + i ) ) for i in paths]
+			del tasks[-1]
 			self.numTasks = len( paths )
 		elif taskName == "Wait":
-			tasks.append( task( taskName + '\n' + str( self.contextItems[0].value() ) + " minutes" ) )
+			t = taskName + '\n' + str( self.contextItems[0].value() ) + " minutes"
+			cmd = command( execType.EXEC_PYTHON, "time.sleep(" + str( self.contextItems[0].value() * 60 ) + ")" )
+			tasks.append( task( t, cmd ) )
 		else:
 			tasks.append( task( taskName ) )
 			self.numTasks = 1
@@ -87,5 +91,6 @@ class taskGenerator( QtGui.QWidget ):
 		print "Files " + str(strings)
 		st = ''
 		for s in strings[0]:
-			st += s + ","
+			if os.path.isfile( s ):
+				st += s + ","
 		self.contextItems[0].setText( st )

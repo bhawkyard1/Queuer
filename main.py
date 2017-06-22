@@ -1,7 +1,11 @@
 import sys
 from PySide import QtGui
+from PySide import QtCore
 from task import *
 from taskGenerator import *
+import util
+from worker import worker
+from functools import partial
 
 if globals().has_key('init_modules'):
 	for m in [x for x in sys.modules.keys() if x not in init_modules]:
@@ -14,7 +18,12 @@ class mainWindow(QtGui.QWidget):
 	def __init__(self):
 		super( mainWindow, self ).__init__()
 		self.initUI()
+		#Task index represents which task is the current 'active' one. Set to -1 here because we have no tasks yet.
+		self.taskIndex = -1
+		#All the tasks are stored in this list.
 		self.taskList = []
+		#The background thread responsible for running the tasks is persistent, and set to None here, since we have no tasks.
+		self.taskQueueWorker = None
 		
 	def initUI(self):
 		self.setGeometry(32, 32, 256, 512)
@@ -29,12 +38,6 @@ class mainWindow(QtGui.QWidget):
 		self.columns.addLayout( self.taskQueueWrapper )
 		self.columns.addLayout( self.menu )
 		
-		#Left column
-		#a = QtGui.QFrame()
-		#a.resize(128, 512)
-		#a.setFrameStyle( QtGui.QFrame.Sunken )
-		#self.taskQueueWrapper.addWidget(a)
-		
 		#Right column
 		self.addTaskBtn = QtGui.QPushButton("Add Job/s")
 		self.menu.addWidget( self.addTaskBtn )
@@ -43,6 +46,18 @@ class mainWindow(QtGui.QWidget):
 		self.clearBtn = QtGui.QPushButton("Clear")
 		self.menu.addWidget( self.clearBtn )
 		self.clearBtn.clicked.connect( self.clearTasks )
+		
+		a = QtGui.QHBoxLayout()
+		self.menu.addLayout( a )
+		
+		b = QtGui.QLabel( "On completion, " )
+		a.addWidget( b )
+		
+		self.onCompletionCombo = QtGui.QComboBox()
+		self.onCompletionCombo.addItem( "do nothing." )
+		self.onCompletionCombo.addItem( "log off." )
+		self.onCompletionCombo.addItem( "shut down." )
+		a.addWidget( self.onCompletionCombo )
 		
 		self.execBtn = QtGui.QPushButton("Execute")
 		self.menu.addWidget( self.execBtn )
@@ -78,10 +93,24 @@ class mainWindow(QtGui.QWidget):
 	
 	#Runs the tasks
 	def execute( self ):
-		for task in self.taskList:
-			task.execute()
-		
-		
+		self.executeTask()
+		self.taskIndex = -1
+		if str( self.onCompletionCombo.currentText() ) == "log off.":
+			util.logoff()
+	
+	#Recusrive function, runs task at self.taskIndex on a seperate thread, then increments self.taskIndex and calls itself again.
+	#Breaks when self.taskIndex is going to be out of bounds.
+	def executeTask( self ):
+		self.taskIndex += 1
+		if self.taskIndex > 0:
+			self.taskList[ self.taskIndex - 1 ].setStyleSheet( "background-color: green" )
+		if self.taskIndex >= len( self.taskList ):
+			return
+		self.taskList[ self.taskIndex ].setStyleSheet( "background-color: orange" )
+		self.taskQueueWorker = worker( self.taskList[ self.taskIndex ].execute )
+		self.connect( self.taskQueueWorker, QtCore.SIGNAL("run() complete"), self.executeTask )
+		self.taskQueueWorker.start() 
+		self.taskList[ self.taskIndex ].setStyleSheet( "background-color: orange" )
 
 def main():
 	app = QtGui.QApplication( sys.argv )
