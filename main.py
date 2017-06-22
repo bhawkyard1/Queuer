@@ -94,9 +94,6 @@ class mainWindow(QtGui.QWidget):
 	#Runs the tasks
 	def execute( self ):
 		self.executeTask()
-		self.taskIndex = -1
-		if str( self.onCompletionCombo.currentText() ) == "log off.":
-			util.logoff()
 	
 	#Recusrive function, runs task at self.taskIndex on a seperate thread, then increments self.taskIndex and calls itself again.
 	#Breaks when self.taskIndex is going to be out of bounds.
@@ -105,12 +102,20 @@ class mainWindow(QtGui.QWidget):
 		if self.taskIndex > 0:
 			self.taskList[ self.taskIndex - 1 ].setStyleSheet( "background-color: green" )
 		if self.taskIndex >= len( self.taskList ):
+			self.executionComplete()
 			return
 		self.taskList[ self.taskIndex ].setStyleSheet( "background-color: orange" )
 		self.taskQueueWorker = worker( self.taskList[ self.taskIndex ].execute )
 		self.connect( self.taskQueueWorker, QtCore.SIGNAL("run() complete"), self.executeTask )
 		self.taskQueueWorker.start() 
 		self.taskList[ self.taskIndex ].setStyleSheet( "background-color: orange" )
+		
+	def executionComplete( self ):
+		self.taskIndex = -1
+		if str( self.onCompletionCombo.currentText() ) == "log off.":
+			util.logoff()
+		elif str( self.onCompletionCombo.currentText() ) == "shut down.":
+			util.shutdown()
 
 def main():
 	app = QtGui.QApplication( sys.argv )

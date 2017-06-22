@@ -27,6 +27,7 @@ class taskGenerator( QtGui.QWidget ):
 		self.mainSelect = QtGui.QComboBox( self )
 		self.mainSelect.addItem("Render")
 		self.mainSelect.addItem("Wait")
+		self.mainSelect.addItem("Send Email")
 		self.mainSelect.addItem("Custom")
 		self.mainSelect.currentIndexChanged.connect( self.updateContextualUI )
 		
@@ -53,6 +54,14 @@ class taskGenerator( QtGui.QWidget ):
 		elif taskName == "Wait":
 			t = taskName + '\n' + str( self.contextItems[0].value() ) + " minutes"
 			cmd = command( execType.EXEC_PYTHON, "time.sleep(" + str( self.contextItems[0].value() * 60 ) + ")" )
+			tasks.append( task( t, cmd ) )
+		elif taskName == "Send Email":
+			t = taskName + '\n' + str( self.contextItems[2].text() ) + '\n' + str( self.contextItems[3].text() )
+			usr = str( self.contextItems[0].text() )
+			pwd = str( self.contextItems[1].text() )
+			address = str( self.contextItems[2].text() )
+			body = str( self.contextItems[3].text() )
+			cmd = command( execType.EXEC_PYTHON, "util.sendEmail('" + usr + "','" + pwd + "','" + address + "','" + body + "')" )
 			tasks.append( task( t, cmd ) )
 		else:
 			tasks.append( task( taskName ) )
@@ -81,6 +90,19 @@ class taskGenerator( QtGui.QWidget ):
 			self.contextItems[0].setSuffix( " Minutes" )
 			self.contextItems[0].setRange( 0, 1440 )
 			self.grid.addWidget( self.contextItems[0], 0, 2 )
+		elif t == "Send Email":
+			self.contextItems.append( QtGui.QLineEdit() )
+			self.contextItems[0].setText( "Your email..." )
+			self.grid.addWidget( self.contextItems[0], 0, 2 )
+			self.contextItems.append( QtGui.QLineEdit() )
+			self.contextItems[1].setText( "Your password..." )
+			self.grid.addWidget( self.contextItems[1], 0, 3 )
+			self.contextItems.append( QtGui.QLineEdit() )
+			self.contextItems[2].setText( "Enter recipient..." )
+			self.grid.addWidget( self.contextItems[2], 0, 4 )
+			self.contextItems.append( QtGui.QLineEdit() )
+			self.contextItems[3].setText( "Enter message..." )
+			self.grid.addWidget( self.contextItems[3], 0, 5 )
 		elif t == "Custom":
 			self.contextItems.append( QtGui.QLineEdit() )
 			self.contextItems[0].setText( "Add custom terminal commands here..." )
