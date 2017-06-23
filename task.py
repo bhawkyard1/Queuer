@@ -1,4 +1,5 @@
 from PySide import QtGui
+from PySide import QtCore
 import time
 
 from enum import Enum
@@ -9,7 +10,7 @@ class taskStatus( Enum ):
 	
 from command import *
 
-class task( QtGui.QFrame ):
+class task( QtGui.QStandardItem ):
 	
 	def __init__( self, _name, _command ):
 		super( task, self ).__init__()
@@ -19,11 +20,11 @@ class task( QtGui.QFrame ):
 		self.initUI()
 		
 	def initUI( self ):
-		self.resize( 128, 64 )
-		self.setStyleSheet( "background-color: salmon" )
+		self.setBackground(QtGui.QColor("salmon"))
 		
-		self.typeLabel = QtGui.QLabel( self.name, self )
-		self.typeLabel.move( 4, 4 )
+		self.setText( self.name )
+		self.setCheckable( True )
+		self.setCheckState( QtCore.Qt.Checked )
 		
 	def execute( self ):
 		if self.status == taskStatus.TASK_COMPLETED:

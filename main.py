@@ -20,22 +20,31 @@ class mainWindow(QtGui.QWidget):
 		self.initUI()
 		#Task index represents which task is the current 'active' one. Set to -1 here because we have no tasks yet.
 		self.taskIndex = -1
+		self.previousTask = None
 		#All the tasks are stored in this list.
 		self.taskList = []
 		#The background thread responsible for running the tasks is persistent, and set to None here, since we have no tasks.
 		self.taskQueueWorker = None
 		
 	def initUI(self):
-		self.setGeometry(32, 32, 256, 512)
+		self.setGeometry(32, 32, 512, 512)
 		self.setWindowTitle('Queuer')
 		self.setWindowIcon(QtGui.QIcon('icon.png')) 
 		
 		#Create the two main columns. Left is queue, right is buttons.
 		self.columns = QtGui.QHBoxLayout( self )
-		self.taskQueueWrapper = QtGui.QVBoxLayout()
-		self.menu = QtGui.QVBoxLayout()
 		
-		self.columns.addLayout( self.taskQueueWrapper )
+		#Create the task queue
+		self.taskQueue = QtGui.QListView()
+		self.taskQueue.setMinimumSize( 256, 512 )
+		self.taskQueueModel = QtGui.QStandardItemModel( self.taskQueue )
+		self.taskQueue.setModel( self.taskQueueModel )
+		#self.taskQueue.
+		
+		self.columns.addWidget( self.taskQueue )
+		
+		#Create the menu
+		self.menu = QtGui.QVBoxLayout()
 		self.columns.addLayout( self.menu )
 		
 		#Right column
@@ -46,6 +55,10 @@ class mainWindow(QtGui.QWidget):
 		self.clearBtn = QtGui.QPushButton("Clear")
 		self.menu.addWidget( self.clearBtn )
 		self.clearBtn.clicked.connect( self.clearTasks )
+		
+		self.delBtn = QtGui.QPushButton("Delete")
+		self.menu.addWidget( self.delBtn )
+		self.delBtn.clicked.connect( self.delTasks )
 		
 		a = QtGui.QHBoxLayout()
 		self.menu.addLayout( a )
@@ -70,7 +83,8 @@ class mainWindow(QtGui.QWidget):
 		#Task generator
 		self.taskGen = taskGenerator()
 		self.taskGen.addBtn.clicked.connect( self.addTask )
-		   
+		  
+		self.taskQueue.show()
 		self.show()
 		
 	def taskDialog( self ):
@@ -79,17 +93,22 @@ class mainWindow(QtGui.QWidget):
 	#Adds one or more tasks to the queue, depending on the exact contents of self.taskGen
 	def addTask( self ):
 		for t in self.taskGen.getTasks():
-			self.taskQueueWrapper.addWidget( t )
+			self.taskQueueModel.appendRow( t )
 			self.taskList.append( t ) 
 		self.taskGen.hide()
 		
 	#Empties the task queue
 	def clearTasks( self ):
-		for t in self.taskList:
-			self.taskQueueWrapper.removeWidget( t )
-			t.deleteLater()
-			t = None
+		for i in reversed( xrange( len( self.taskList ) ) ):
+			self.taskQueueModel.removeRow( i )
 		self.taskList = []
+		
+	def delTasks( self ):
+		for i in reversed( xrange( len( self.taskList ) ) ):
+			if self.taskList[i].checkState() == QtCore.Qt.Checked:
+				self.taskQueueModel.removeRow( i )
+				del self.taskList[ i ]
+				
 	
 	#Runs the tasks
 	def execute( self ):
@@ -98,17 +117,35 @@ class mainWindow(QtGui.QWidget):
 	#Recusrive function, runs task at self.taskIndex on a seperate thread, then increments self.taskIndex and calls itself again.
 	#Breaks when self.taskIndex is going to be out of bounds.
 	def executeTask( self ):
+		
+		#Increment the active index
 		self.taskIndex += 1
-		if self.taskIndex > 0:
-			self.taskList[ self.taskIndex - 1 ].setStyleSheet( "background-color: green" )
+		print "Executing task " + str( self.taskIndex )
+		
+		#Set last completed task to green
+		if not self.previousTask is None:
+			self.previousTask.setBackground(QtGui.QColor("green"))
+		
+		#Break out if we are at the end of the list.
 		if self.taskIndex >= len( self.taskList ):
 			self.executionComplete()
 			return
-		self.taskList[ self.taskIndex ].setStyleSheet( "background-color: orange" )
+		
+		#Skip if the task is unchecked
+		if self.taskList[ self.taskIndex ].checkState() != QtCore.Qt.Checked:
+			self.executeTask()
+			return
+		else:
+			self.previousTask = self.taskList[ self.taskIndex ]
+		
+		#Set up the worker thread
 		self.taskQueueWorker = worker( self.taskList[ self.taskIndex ].execute )
+		#Connect to this function
 		self.connect( self.taskQueueWorker, QtCore.SIGNAL("run() complete"), self.executeTask )
+		#Run thread
 		self.taskQueueWorker.start() 
-		self.taskList[ self.taskIndex ].setStyleSheet( "background-color: orange" )
+		#Set this task to colour orange
+		self.taskList[ self.taskIndex ].setBackground(QtGui.QColor("orange"))
 		
 	def executionComplete( self ):
 		self.taskIndex = -1
